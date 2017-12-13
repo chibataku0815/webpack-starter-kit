@@ -1,0 +1,19 @@
+/* Vendors */
+@import "~normalize.css";
+
+/* Setup */
+@import "./settings/main";
+
+/* Base styles */
+@import "./base/main";
+
+/* Layout */
+@import "./layout/header";
+@import "./layout/footer";
+@import "./layout/nav";
+
+/* Components */
+@import "./components/buttons";
+
+/* Utilities */
+@import "./utilities/flex";

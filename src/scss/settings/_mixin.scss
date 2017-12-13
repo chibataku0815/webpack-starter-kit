@@ -1,0 +1,163 @@
+@mixin vender($property, $value) {
+  @each $prefix in -webkit-, -moz-, -ms-, -o-, "" {
+    #{$prefix}#{$property}: $value;
+  }
+}
+
+@mixin gradient-top-lighten($color: $hoge, $lighten: 10) {
+  background-color: $color;
+
+  @include background-image(linear-gradient(lighten($color, $lighten) 0%, $color 100%));
+}
+
+@mixin gradient-top-darken($color: $hoge, $darken: 10) {
+  background-color: $color;
+
+  @include background-image(linear-gradient(darken($color, $darken) 0%, $color 100%));
+}
+
+@mixin query($size) {
+  @media all and (max-width: $size + px) {
+    @content;
+  }
+}
+
+@mixin material-icons {
+  font-family: "Material Icons";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "liga";
+}
+
+@function escape-numerator($numerator, $namespace: '') {
+  @if ($namespace == '') {
+    $numerator-as-string: inspect($numerator);
+
+    $escaped-numerator: '';
+
+    @for $i from 1 through str-length($numerator-as-string) {
+      $digit: str-slice($numerator-as-string, $i, $i);
+
+      $escaped-numerator: $escaped-numerator+\3 + $digit;
+    }
+
+    @return $escaped-numerator;
+  }
+
+  @else {
+    @return $numerator;
+  }
+}
+
+@function av-create-width-class-name($style, $numerator, $denominator, $breakpoint-alias) {
+  $class-name: null;
+
+  @if $style == 'fraction' or $style == 'fragment' {
+    // Set delimiter as slash or text
+    $delimiter: if($style == 'fraction', \-, -of-);
+
+    $class-name: #{$av-width-class-namespace}#{
+      escape-numerator($numerator, $av-width-class-namespace)}
+      #{$delimiter}#{$denominator}#{$breakpoint-alias};
+  }
+
+  @else {
+    @if $av-width-class-namespace == '' {
+      @error "cannot be done.";
+    }
+
+    $class-width: floor(($numerator / $denominator) * 100);
+
+    $class-name: #{$av-width-class-namespace}#{$class-width}#{$breakpoint-alias};
+  }
+
+  @return $class-name;
+}
+
+@function avCreateBlockClassName($modifier: '') {
+  @if $modifier == '' {
+    @return #{$av-namespace};
+  }
+
+  @return #{$av-namespace}#{$av-modifier-class-chain}#{$modifier};
+}
+
+@function avCreateElementClassName($modifier: '') {
+  @if $modifier == '' {
+    @return #{$av-namespace}#{$av-element-class-chain}#{$av-element-name};
+  }
+
+  @return #{$av-namespace}#{$av-element-class-chain}#{$av-element-name}#{$av-modifier-class-chain}#{$modifier};
+}
+
+@mixin av-create-widths($widths, $breakpoint-alias: null) {
+
+  // Initialise an empty utility map that will eventually contain all our classes
+  $pseudo-class-map: ();
+
+  // Loop widths
+  @each $denominator in $widths {
+
+    // If 1=1, 2=2, 3=3; @for will skip over so create 1/1 class manually
+    @if ($denominator == 1) {
+
+      // Create 1/1 class
+      $class-name: av-create-width-class-name($av-width-class-style, 1, 1, $breakpoint-alias);
+
+      .#{$class-name} {
+        width: 100%;
+      }
+    }
+
+    @else {
+
+      // Loop widths as fractions
+      @for $numerator from 1 to $denominator {
+
+        // Create class name and set width value
+        $class-name: av-create-width-class-name($av-width-class-style, $numerator, $denominator, $breakpoint-alias);
+
+        $width-value: percentage($numerator / $denominator);
+
+        // Is this width already in our utility map?
+        $duplicate: map-get($pseudo-class-map, $width-value);
+
+        // Create width class
+        .#{$class-name} {
+
+          // If this width is in utility map, @extend the duplicate, else create a new one
+          @if $duplicate {
+            @extend .#{$duplicate};
+          }
+
+          @else {
+            width: $width-value;
+          }
+        }
+
+        // Add this class to utility map
+        $add-class: ($width-value: $class-name);
+
+        $pseudo-class-map: map-merge($pseudo-class-map, $add-class);
+      }
+    }
+  }
+}
+
+@mixin av-mq($alias) {
+
+  // Search breakpoint map for alias
+  $query: map-get($av-breakpoints, $alias);
+
+  // If alias exists, print out media query
+  @if $query {
+    @media #{$query} {
+      @content;
+    }
+  }
+
+  @else {
+    @error "No breakpoint found for #{$alias}";
+  }
+}
